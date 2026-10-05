@@ -127,6 +127,10 @@ class VoipAssistSatellite(VoIPEntity, AssistSatelliteEntity, RtpDatagramProtocol
         self._audio_chunk_timeout: float = 2.0
         self._run_pipeline_task: asyncio.Task | None = None
         self._pipeline_had_error: bool = False
+        # Streaming fork: the last run heard something but recognized no
+        # words (line noise, a cut-off syllable). Listen again without tones.
+        self._nothing_recognized: bool = False
+        self._quiet_restart: bool = False
         self._tts_done = asyncio.Event()
         self._tts_extra_timeout: float = 1.0
         self._tone_bytes: dict[Tones, bytes] = {}
@@ -457,7 +461,11 @@ class VoipAssistSatellite(VoIPEntity, AssistSatelliteEntity, RtpDatagramProtocol
                     retry = False
 
         # Play listening tone at the start of each cycle
-        await self._play_tone(Tones.LISTENING, silence_before=0.2)
+        if self._quiet_restart:
+            # Streaming fork: not after a run in which nothing was recognized
+            self._quiet_restart = False
+        else:
+            await self._play_tone(Tones.LISTENING, silence_before=0.2)
 
         try:
             await self.async_accept_pipeline_from_satellite(
@@ -468,7 +476,14 @@ class VoipAssistSatellite(VoIPEntity, AssistSatelliteEntity, RtpDatagramProtocol
             if self._pipeline_had_error:
                 _LOGGER.debug("Pipeline error")
                 self._pipeline_had_error = False
-                await self._play_tone(Tones.ERROR)
+                if self._nothing_recognized:
+                    # Streaming fork: on a phone line this happens often and
+                    # is not worth two seconds of error tone during which
+                    # the caller cannot be heard.
+                    self._nothing_recognized = False
+                    self._quiet_restart = True
+                else:
+                    await self._play_tone(Tones.ERROR)
             else:
                 # Block until TTS is done speaking.
                 #
@@ -585,7 +600,13 @@ class VoipAssistSatellite(VoIPEntity, AssistSatelliteEntity, RtpDatagramProtocol
         elif event.type == PipelineEventType.ERROR:
             # Play error tone instead of wait for TTS when pipeline is finished.
             self._pipeline_had_error = True
-            _LOGGER.warning(event)
+            if event.data and event.data.get("code") == "stt-no-text-recognized":
+                # Streaming fork: handled quietly, see _run_pipeline
+                self._nothing_recognized = True
+                _LOGGER.debug(event)
+            else:
+                self._nothing_recognized = False
+                _LOGGER.warning(event)
 
     async def _send_tts(
         self,

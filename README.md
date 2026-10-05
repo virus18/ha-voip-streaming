@@ -13,6 +13,8 @@ This copy
 - starts sending as soon as the pipeline reports that the response is being streamed (`tts_start_streaming`), which can be before the language model has finished writing,
 - forwards every audio chunk to the RTP output queue as it arrives, so playback begins with the first chunk and the chunks play back to back.
 
+It also treats a run in which speech was detected but no words were recognized (line noise, a cut-off syllable) quietly: no error tone and no listening tone, it simply listens again. Upstream plays a two second error tone each time, during which the caller cannot be heard.
+
 Everything else is the upstream code. The changes are in `assist_satellite.py` (marked "Streaming fork") and the new `wav_stream.py`.
 
 ## Requirements

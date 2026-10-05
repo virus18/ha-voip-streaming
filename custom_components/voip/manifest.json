@@ -20,6 +20,6 @@
   "requirements": [
     "voip-utils==0.4.3"
   ],
-  "version": "2026.9.4.1",
+  "version": "2026.9.4.2",
   "issue_tracker": "https://github.com/virus18/ha-voip-streaming/issues"
 }
