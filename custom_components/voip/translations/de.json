@@ -1,0 +1,56 @@
+{
+  "config": {
+    "abort": {
+      "single_instance_allowed": "Bereits konfiguriert. Nur eine einzige Konfiguration ist möglich."
+    },
+    "step": {
+      "user": {
+        "description": "Voice-over-IP-Anrufe empfangen, um mit Assist zu interagieren."
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "sip_port": "SIP-Port",
+          "sip_user": "SIP-Benutzer"
+        }
+      }
+    }
+  },
+  "entity": {
+    "select": {
+      "pipeline": {
+        "name": "Assistent",
+        "state": {
+          "preferred": "Bevorzugt"
+        }
+      },
+      "pipeline_n": {
+        "name": "Assistent {index}",
+        "state": {
+          "preferred": "Bevorzugt"
+        }
+      },
+      "vad_sensitivity": {
+        "name": "Sprechpausen-Erkennung",
+        "state": {
+          "aggressive": "Aggressiv",
+          "default": "Standard",
+          "relaxed": "Entspannt"
+        }
+      }
+    },
+    "switch": {
+      "allow_call": {
+        "name": "Anrufe zulassen"
+      }
+    }
+  },
+  "exceptions": {
+    "non_tts_announcement": {
+      "message": "VoIP unterstützt derzeit keine Nicht-TTS-Ansagen"
+    }
+  }
+}
